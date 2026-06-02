@@ -32,12 +32,6 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Restore google-services.json from secret when needed
-        if: ${{ hashFiles('android/app/google-services.json') == '' && secrets.GOOGLE_SERVICES_JSON != '' }}
-        run: |
-          mkdir -p android/app
-          printf '%s' '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
-
       - name: Install dependencies
         run: flutter pub get
 
