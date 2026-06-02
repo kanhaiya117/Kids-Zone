@@ -35,32 +35,6 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Restore Android release keystore
-        env:
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: |
-          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
-            echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
-            echo "ANDROID_KEYSTORE_PATH=$GITHUB_WORKSPACE/android/app/upload-keystore.jks" >> "$GITHUB_ENV"
-            echo "ANDROID_KEYSTORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
-            echo "ANDROID_KEY_ALIAS=$ANDROID_KEY_ALIAS" >> "$GITHUB_ENV"
-            echo "ANDROID_KEY_PASSWORD=$ANDROID_KEY_PASSWORD" >> "$GITHUB_ENV"
-            echo "Using release keystore from GitHub Secrets."
-          else
-            echo "No release keystore secret found. Build will use debug signing fallback."
-          fi
-
-      - name: Generate Android signing fingerprints
-        run: |
-          mkdir -p build/reports
-          cd android
-          ./gradlew signingReport > ../build/reports/android-signing-report.txt
-          cd ..
-          grep -E "Variant:|Config:|Store:|Alias:|SHA1:|SHA-256:" build/reports/android-signing-report.txt
-
       - name: Analyze
         run: flutter analyze
 
@@ -75,11 +49,4 @@ jobs:
         with:
           name: kidszone-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
-          if-no-files-found: error
-
-      - name: Upload signing report artifact
-        uses: actions/upload-artifact@v5
-        with:
-          name: android-signing-report
-          path: build/reports/android-signing-report.txt
           if-no-files-found: error
