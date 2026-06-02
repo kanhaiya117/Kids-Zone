@@ -73,7 +73,7 @@ class _ChildHomeScreenState extends ConsumerState<ChildHomeScreen> {
             }
             return Scaffold(
               appBar: AppBar(
-                title: const Text('KidsZone'),
+                title: const KidsZoneLogo(compact: true),
                 actions: [
                   IconButton(
                     tooltip: 'Sign out',
@@ -125,7 +125,7 @@ class PendingApprovalScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('KidsZone')),
+      appBar: AppBar(title: const KidsZoneLogo(compact: true)),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),

@@ -11,7 +11,7 @@ class KidsZoneApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
     return MaterialApp.router(
-      title: 'KidsZone',
+      title: 'Kids Zone',
       debugShowCheckedModeBanner: false,
       theme: buildKidsZoneTheme(),
       routerConfig: router,

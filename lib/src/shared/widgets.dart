@@ -1,6 +1,115 @@
 import 'package:flutter/material.dart';
 
+import '../core/theme.dart';
 import '../domain/models.dart';
+
+class KidsZoneLogo extends StatelessWidget {
+  const KidsZoneLogo({
+    super.key,
+    this.compact = false,
+    this.centered = false,
+  });
+
+  final bool compact;
+  final bool centered;
+
+  @override
+  Widget build(BuildContext context) {
+    final titleStyle = (compact
+            ? Theme.of(context).textTheme.titleLarge
+            : Theme.of(context).textTheme.headlineMedium)
+        ?.copyWith(
+      fontWeight: FontWeight.w900,
+      color: KidsZoneColors.ink,
+      letterSpacing: 0,
+    );
+    final mark = _KidsZoneMark(size: compact ? 34 : 54);
+    final title = Column(
+      crossAxisAlignment:
+          centered ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text('Kids Zone', style: titleStyle),
+        if (!compact)
+          Text(
+            'Safe learning social',
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: const Color(0xFF5C6B7A),
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0,
+                ),
+          ),
+      ],
+    );
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment:
+          centered ? MainAxisAlignment.center : MainAxisAlignment.start,
+      children: [
+        mark,
+        const SizedBox(width: 10),
+        Flexible(child: title),
+      ],
+    );
+  }
+}
+
+class _KidsZoneMark extends StatelessWidget {
+  const _KidsZoneMark({required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.square(
+      dimension: size,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: KidsZoneColors.field,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: KidsZoneColors.line),
+          boxShadow: [
+            BoxShadow(
+              color: KidsZoneColors.sky.withValues(alpha: 0.10),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Positioned(
+              top: size * 0.18,
+              left: size * 0.18,
+              child: _dot(size * 0.16, KidsZoneColors.sun),
+            ),
+            Positioned(
+              right: size * 0.18,
+              top: size * 0.23,
+              child: _dot(size * 0.13, KidsZoneColors.leaf),
+            ),
+            Icon(
+              Icons.psychology_alt_outlined,
+              color: KidsZoneColors.sky,
+              size: size * 0.52,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _dot(double size, Color color) {
+    return SizedBox.square(
+      dimension: size,
+      child: DecoratedBox(
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      ),
+    );
+  }
+}
 
 class FullScreenLoader extends StatelessWidget {
   const FullScreenLoader({super.key, required this.label});

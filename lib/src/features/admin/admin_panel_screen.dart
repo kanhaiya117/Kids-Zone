@@ -41,7 +41,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Admin Panel'),
+        title: const KidsZoneLogo(compact: true),
         actions: [
           IconButton(
             tooltip: 'Sign out',

@@ -31,7 +31,7 @@ class _ParentDashboardScreenState extends ConsumerState<ParentDashboardScreen> {
     if (parentId == null) return const ErrorPanel(message: 'Not signed in.');
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Parent Dashboard'),
+        title: const KidsZoneLogo(compact: true),
         actions: [
           IconButton(
             tooltip: 'Sign out',

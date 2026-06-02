@@ -164,13 +164,22 @@ class _CreatePostSheetState extends ConsumerState<CreatePostSheet> {
               }),
             ),
             const SizedBox(height: 12),
-            TextField(controller: _title, decoration: const InputDecoration(labelText: 'Title')),
+            TextField(
+              controller: _title,
+              decoration: const InputDecoration(
+                labelText: 'Title',
+                prefixIcon: Icon(Icons.title),
+              ),
+            ),
             const SizedBox(height: 12),
             TextField(
               controller: _body,
               minLines: 3,
               maxLines: 5,
-              decoration: const InputDecoration(labelText: 'Description or poem'),
+              decoration: const InputDecoration(
+                labelText: 'Description or poem',
+                prefixIcon: Icon(Icons.edit_note),
+              ),
             ),
             if (_type != ContentType.poetry) ...[
               const SizedBox(height: 12),
@@ -204,6 +213,32 @@ class _CreatePostSheetState extends ConsumerState<CreatePostSheet> {
   }
 
   Future<void> _submit() async {
+    final title = _title.text.trim();
+    final body = _body.text.trim();
+    if (title.length < 3 || title.length > 80) {
+      setState(() {
+        _error = 'Title must be 3 to 80 characters.';
+      });
+      return;
+    }
+    if (body.length > 1000) {
+      setState(() {
+        _error = 'Description must be 1000 characters or less.';
+      });
+      return;
+    }
+    if (_type == ContentType.poetry && body.length < 3) {
+      setState(() {
+        _error = 'Poetry needs at least 3 characters.';
+      });
+      return;
+    }
+    if (_type != ContentType.poetry && _file == null) {
+      setState(() {
+        _error = 'Pick a ${_type.name} file before submitting.';
+      });
+      return;
+    }
     setState(() {
       _busy = true;
       _error = null;
@@ -212,8 +247,8 @@ class _CreatePostSheetState extends ConsumerState<CreatePostSheet> {
       await ref.read(contentRepositoryProvider).createPost(
             childId: widget.child.id,
             authorName: 'Kid',
-            title: _title.text,
-            body: _body.text,
+            title: title,
+            body: body,
             type: _type,
             mediaFile: _file,
           );

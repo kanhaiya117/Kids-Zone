@@ -85,6 +85,17 @@ class AuthRepository {
     required int? childAge,
     required String? parentInviteCode,
   }) async {
+    final cleanName = displayName.trim();
+    final cleanInvite = parentInviteCode?.trim().toUpperCase();
+    if (cleanName.length < 2 || cleanName.length > 40) {
+      throw ArgumentError('Display name must be 2 to 40 characters.');
+    }
+    if (role == UserRole.child && (childAge == null || childAge < 5 || childAge > 15)) {
+      throw ArgumentError('Child age must be between 5 and 15.');
+    }
+    if (role == UserRole.child && (cleanInvite == null || cleanInvite.isEmpty)) {
+      throw ArgumentError('Parent invite code is required for child accounts.');
+    }
     final user = _auth.currentUser;
     if (user == null) throw StateError('No signed-in Firebase user.');
     final token = await _messaging.getToken();
@@ -95,7 +106,7 @@ class AuthRepository {
     batch.set(userRef, {
       'role': role.name,
       'status': status.name,
-      'displayName': displayName.trim(),
+      'displayName': cleanName,
       'phone': user.phoneNumber,
       'fcmTokens': token == null ? [] : FieldValue.arrayUnion([token]),
       'createdAt': FieldValue.serverTimestamp(),
@@ -105,7 +116,7 @@ class AuthRepository {
     if (role == UserRole.parent) {
       batch.set(_firestore.collection('parents').doc(user.uid), {
         'userId': user.uid,
-        'displayName': displayName.trim(),
+        'displayName': cleanName,
         'inviteCode': user.uid.substring(0, 6).toUpperCase(),
         'verified': true,
         'createdAt': FieldValue.serverTimestamp(),
@@ -116,7 +127,7 @@ class AuthRepository {
       final childRef = _firestore.collection('children').doc(user.uid);
       batch.set(childRef, {
         'userId': user.uid,
-        'displayName': displayName.trim(),
+        'displayName': cleanName,
         'age': childAge ?? 5,
         'status': AccountStatus.pending.name,
         'chatEnabled': false,
@@ -126,22 +137,23 @@ class AuthRepository {
         'safetyPolicy': const SafetyPolicy().toMap(),
         'createdAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
-      if (parentInviteCode != null && parentInviteCode.trim().isNotEmpty) {
+      if (cleanInvite != null && cleanInvite.isNotEmpty) {
         final parentQuery = await _firestore
             .collection('parents')
-            .where('inviteCode', isEqualTo: parentInviteCode.trim().toUpperCase())
+            .where('inviteCode', isEqualTo: cleanInvite)
             .limit(1)
             .get();
-        if (parentQuery.docs.isNotEmpty) {
-          final parentId = parentQuery.docs.first.id;
-          batch.set(_firestore.collection('approvalRequests').doc(), {
-            'childId': user.uid,
-            'parentId': parentId,
-            'childName': displayName.trim(),
-            'status': 'pending',
-            'createdAt': FieldValue.serverTimestamp(),
-          });
+        if (parentQuery.docs.isEmpty) {
+          throw ArgumentError('Parent invite code was not found.');
         }
+        final parentId = parentQuery.docs.first.id;
+        batch.set(_firestore.collection('approvalRequests').doc(), {
+          'childId': user.uid,
+          'parentId': parentId,
+          'childName': cleanName,
+          'status': 'pending',
+          'createdAt': FieldValue.serverTimestamp(),
+        });
       }
     }
 
@@ -353,6 +365,20 @@ class ContentRepository {
     required ContentType type,
     File? mediaFile,
   }) async {
+    final cleanTitle = title.trim();
+    final cleanBody = body.trim();
+    if (cleanTitle.length < 3 || cleanTitle.length > 80) {
+      throw ArgumentError('Title must be 3 to 80 characters.');
+    }
+    if (cleanBody.length > 1000) {
+      throw ArgumentError('Description must be 1000 characters or less.');
+    }
+    if (type == ContentType.poetry && cleanBody.length < 3) {
+      throw ArgumentError('Poetry needs at least 3 characters.');
+    }
+    if (type != ContentType.poetry && mediaFile == null) {
+      throw ArgumentError('A ${type.name} file is required.');
+    }
     final postId = _uuid.v4();
     String? mediaUrl;
     String? mimeType;
@@ -370,7 +396,7 @@ class ContentRepository {
       targetType: 'post',
       targetId: postId,
       actorUserId: childId,
-      text: '$title\n$body',
+      text: '$cleanTitle\n$cleanBody',
     );
     final initialStatus = textResult.decision == ModerationDecision.rejected
         ? ContentStatus.rejected
@@ -379,8 +405,8 @@ class ContentRepository {
     await _firestore.collection('posts').doc(postId).set({
       'childId': childId,
       'authorName': authorName,
-      'title': title.trim(),
-      'body': body.trim(),
+      'title': cleanTitle,
+      'body': cleanBody,
       'type': type.name,
       'mediaUrl': mediaUrl,
       'status': initialStatus.name,
@@ -419,12 +445,16 @@ class ContentRepository {
     required String childId,
     required String body,
   }) async {
+    final cleanBody = body.trim();
+    if (cleanBody.length < 2 || cleanBody.length > 500) {
+      throw ArgumentError('Comment must be 2 to 500 characters.');
+    }
     final commentRef = _firestore.collection('posts').doc(postId).collection('comments').doc();
     final result = await _moderation.moderateText(
       targetType: 'comment',
       targetId: commentRef.id,
       actorUserId: childId,
-      text: body,
+      text: cleanBody,
     );
     if (result.decision == ModerationDecision.rejected) {
       await _firestore.collection('children').doc(childId).update({
@@ -433,7 +463,7 @@ class ContentRepository {
     }
     await commentRef.set({
       'childId': childId,
-      'body': body.trim(),
+      'body': cleanBody,
       'status': result.decision == ModerationDecision.approved
           ? ContentStatus.approved.name
           : ContentStatus.flagged.name,
