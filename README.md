@@ -86,6 +86,12 @@ flutter build apk --debug
 
 The local workspace passed `flutter analyze` and `flutter test`. Android build requires an installed Android SDK and `ANDROID_HOME`.
 
+## GitHub Actions
+
+The repository includes `.github/workflows/flutter-android.yml`, which runs on pushes, pull requests, and manual dispatches. It installs Flutter stable `3.44.1`, runs analysis and tests, builds a release APK, and uploads the APK as the `kidszone-release-apk` artifact.
+
+If `android/app/google-services.json` is not committed in a future cleanup, add a repository secret named `GOOGLE_SERVICES_JSON` containing the full file contents.
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.
