@@ -49,7 +49,8 @@ firebase.json
 2. Enable Phone Authentication, Firestore, Storage, and FCM.
 3. Download `google-services.json`.
 4. Place it at `android/app/google-services.json`.
-5. Deploy rules:
+5. Make sure the Firebase Android package name matches the Gradle `applicationId`.
+6. Deploy rules:
 
 ```bash
 firebase deploy --only firestore:rules,firestore:indexes,storage:rules
