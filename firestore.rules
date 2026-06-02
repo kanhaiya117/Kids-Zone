@@ -1,0 +1,116 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userDoc(uid) {
+      return get(/databases/$(database)/documents/users/$(uid));
+    }
+
+    function role() {
+      return signedIn() && userDoc(request.auth.uid).data.role;
+    }
+
+    function isAdmin() {
+      return signedIn() && userDoc(request.auth.uid).data.role == 'admin';
+    }
+
+    function isParentOf(childId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/children/$(childId))
+        && request.auth.uid in get(/databases/$(database)/documents/children/$(childId)).data.parentIds;
+    }
+
+    function activeChild() {
+      return signedIn()
+        && userDoc(request.auth.uid).data.role == 'child'
+        && userDoc(request.auth.uid).data.status == 'active';
+    }
+
+    match /users/{userId} {
+      allow create: if signedIn() && request.auth.uid == userId;
+      allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
+      allow update: if signedIn() && (request.auth.uid == userId || isAdmin());
+      allow delete: if false;
+    }
+
+    match /parents/{parentId} {
+      allow create, read, update: if signedIn() && (request.auth.uid == parentId || isAdmin());
+      allow delete: if false;
+    }
+
+    match /children/{childId} {
+      allow create: if signedIn() && request.auth.uid == childId;
+      allow read: if signedIn() && (request.auth.uid == childId || isParentOf(childId) || isAdmin());
+      allow update: if signedIn() && (request.auth.uid == childId || isParentOf(childId) || isAdmin());
+      allow delete: if false;
+    }
+
+    match /approvalRequests/{requestId} {
+      allow create: if signedIn();
+      allow read, update: if signedIn()
+        && (resource.data.parentId == request.auth.uid || resource.data.childId == request.auth.uid || isAdmin());
+      allow delete: if false;
+    }
+
+    match /posts/{postId} {
+      allow read: if signedIn()
+        && (resource.data.status == 'approved'
+          || resource.data.childId == request.auth.uid
+          || isParentOf(resource.data.childId)
+          || isAdmin());
+      allow create: if activeChild()
+        && request.resource.data.childId == request.auth.uid
+        && request.resource.data.status in ['pending', 'rejected'];
+      allow update: if signedIn()
+        && (resource.data.childId == request.auth.uid || isParentOf(resource.data.childId) || isAdmin());
+      allow delete: if false;
+
+      match /likes/{childId} {
+        allow read: if signedIn();
+        allow create: if activeChild() && request.auth.uid == childId;
+        allow delete: if activeChild() && request.auth.uid == childId;
+      }
+
+      match /comments/{commentId} {
+        allow read: if signedIn();
+        allow create: if activeChild() && request.resource.data.childId == request.auth.uid;
+        allow update, delete: if isAdmin();
+      }
+    }
+
+    match /education/{itemId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /screenTime/{childId} {
+      allow read, write: if signedIn() && (request.auth.uid == childId || isParentOf(childId) || isAdmin());
+    }
+
+    match /moderationQueue/{itemId} {
+      allow create: if activeChild();
+      allow read, update: if isAdmin();
+      allow delete: if false;
+    }
+
+    match /moderationLogs/{logId} {
+      allow create: if signedIn();
+      allow read: if isAdmin();
+      allow update, delete: if false;
+    }
+
+    match /rewards/{rewardId} {
+      allow read: if signedIn()
+        && (resource.data.childId == request.auth.uid || resource.data.parentId == request.auth.uid || isAdmin());
+      allow create: if signedIn() && (request.resource.data.parentId == request.auth.uid || isAdmin());
+      allow update, delete: if isAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if isAdmin();
+    }
+  }
+}
